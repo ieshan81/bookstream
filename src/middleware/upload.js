@@ -1,24 +1,30 @@
 import multer from 'multer';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import fs from 'fs/promises';
+import os from 'os';
 import { storageConfig } from '../config/cloudStorage.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const isSupabaseStorage = storageConfig.type === 'supabase';
 
-// Configure storage
-const storage = multer.diskStorage({
+if (!isSupabaseStorage) {
+  await fs.mkdir(storageConfig.localPath, { recursive: true }).catch(() => {});
+}
+
+const diskStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, storageConfig.localPath);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     const ext = path.extname(file.originalname);
     cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
   },
 });
 
-// File filter
+const storage = isSupabaseStorage
+  ? multer.memoryStorage()
+  : diskStorage;
+
 const fileFilter = (req, file, cb) => {
   const allowedMimes = storageConfig.allowedFormats;
   const allowedExts = ['.pdf', '.epub'];
@@ -31,7 +37,6 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// Configure multer
 export const upload = multer({
   storage,
   fileFilter,
@@ -42,3 +47,15 @@ export const upload = multer({
 
 export const uploadSingle = upload.single('book');
 
+export const createTempFileFromBuffer = async (file) => {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'bookstream-'));
+  const extension = path.extname(file.originalname) || '.tmp';
+  const tempPath = path.join(tempDir, `${file.fieldname || 'upload'}${extension}`);
+  await fs.writeFile(tempPath, file.buffer);
+  const cleanup = async () => {
+    await fs.unlink(tempPath).catch(() => {});
+    await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+  };
+
+  return { tempPath, cleanup };
+};
