@@ -1,0 +1,72 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String?   @map("password_hash")
+  name          String?
+  avatar        String?
+  oauthProvider String?   @map("oauth_provider")
+  oauthId       String?   @map("oauth_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  books          Book[]
+  readingProgress ReadingProgress[]
+
+  @@map("users")
+}
+
+model Book {
+  id              String    @id @default(cuid())
+  title           String
+  author          String
+  genre           String
+  summaryShort    String?   @map("summary_short") @db.Text
+  summaryLong     String?   @map("summary_long") @db.Text
+  coverImageUrl   String?   @map("cover_image_url")
+  fileUrl         String    @map("file_url")
+  fileFormat      String    @map("file_format")
+  uploaderId      String    @map("uploader_id")
+  metadata        Json?
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  uploader        User              @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+  readingProgress ReadingProgress[]
+
+  @@index([title, author])
+  @@index([genre])
+  @@index([createdAt])
+  @@map("books")
+}
+
+model ReadingProgress {
+  id               String   @id @default(cuid())
+  userId           String   @map("user_id")
+  bookId           String   @map("book_id")
+  currentPage      Int      @default(0) @map("current_page")
+  totalPages       Int      @default(0) @map("total_pages")
+  percentageComplete Float  @default(0) @map("percentage_complete")
+  lastReadAt       DateTime @default(now()) @map("last_read_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bookId])
+  @@index([userId])
+  @@index([bookId])
+  @@map("reading_progress")
+}
+

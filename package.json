@@ -1,0 +1,34 @@
+{
+  "name": "bookstream-backend",
+  "version": "1.0.0",
+  "description": "Backend for Netflix-style book streaming platform",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "keywords": ["books", "streaming", "api"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
+    "prisma": "^5.7.1",
+    "@prisma/client": "^5.7.1",
+    "express-validator": "^7.0.1",
+    "pdf-parse": "^1.1.1",
+    "sharp": "^0.33.1",
+    "supabase": "^2.7.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
+
