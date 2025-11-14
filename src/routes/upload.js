@@ -1,23 +1,34 @@
 import express from 'express';
 import prisma from '../config/database.js';
 import { authenticate } from '../middleware/auth.js';
-import { uploadSingle } from '../middleware/upload.js';
+import { uploadSingle, createTempFileFromBuffer } from '../middleware/upload.js';
 import { saveFile } from '../services/fileStorage.js';
 import { parseBookMetadata } from '../services/bookParser.js';
 
 const router = express.Router();
 
-// Upload book
 router.post('/upload', authenticate, uploadSingle, async (req, res, next) => {
+  let cleanupTemp = async () => {};
+
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    // Parse book metadata
-    const metadata = await parseBookMetadata(req.file.path, req.file.originalname);
+    let workingPath = req.file.path;
 
-    // Check for duplicates (case-insensitive title + author match)
+    if (!workingPath && req.file.buffer) {
+      const tempFile = await createTempFileFromBuffer(req.file);
+      workingPath = tempFile.tempPath;
+      cleanupTemp = tempFile.cleanup;
+    }
+
+    if (!workingPath) {
+      return res.status(500).json({ message: 'Unable to process uploaded file' });
+    }
+
+    const metadata = await parseBookMetadata(workingPath, req.file.originalname);
+
     const existingBook = await prisma.book.findFirst({
       where: {
         title: { equals: metadata.title, mode: 'insensitive' },
@@ -26,9 +37,11 @@ router.post('/upload', authenticate, uploadSingle, async (req, res, next) => {
     });
 
     if (existingBook) {
-      // Delete uploaded file since it's a duplicate
-      const fs = await import('fs/promises');
-      await fs.unlink(req.file.path).catch(() => {});
+      if (req.file.path) {
+        const fs = await import('fs/promises');
+        await fs.unlink(req.file.path).catch(() => {});
+      }
+      await cleanupTemp();
 
       return res.status(409).json({
         message: 'Book already exists',
@@ -41,10 +54,8 @@ router.post('/upload', authenticate, uploadSingle, async (req, res, next) => {
       });
     }
 
-    // Save file info
-    const fileInfo = await saveFile(req.file);
+    const fileInfo = await saveFile({ ...req.file, path: req.file.path || workingPath });
 
-    // Create book record
     const book = await prisma.book.create({
       data: {
         title: metadata.title,
@@ -65,14 +76,16 @@ router.post('/upload', authenticate, uploadSingle, async (req, res, next) => {
       },
     });
 
+    await cleanupTemp();
+
     res.status(201).json({
       message: 'Book uploaded successfully',
       book,
     });
   } catch (error) {
+    await cleanupTemp();
     next(error);
   }
 });
 
 export default router;
-
