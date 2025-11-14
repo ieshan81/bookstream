@@ -13,6 +13,12 @@ router.post('/progress', authenticate, async (req, res, next) => {
       return res.status(400).json({ message: 'bookId and currentPage are required' });
     }
 
+    const parsedCurrentPage = Number.parseInt(currentPage, 10);
+
+    if (Number.isNaN(parsedCurrentPage) || parsedCurrentPage < 0) {
+      return res.status(400).json({ message: 'currentPage must be a non-negative integer' });
+    }
+
     // Verify book exists
     const book = await prisma.book.findUnique({
       where: { id: bookId },
@@ -22,8 +28,23 @@ router.post('/progress', authenticate, async (req, res, next) => {
       return res.status(404).json({ message: 'Book not found' });
     }
 
-    const calculatedTotalPages = totalPages || 100; // Default if not provided
-    const percentageComplete = Math.min(100, Math.max(0, (currentPage / calculatedTotalPages) * 100));
+    let calculatedTotalPages;
+
+    if (totalPages === undefined || totalPages === null || totalPages === '') {
+      calculatedTotalPages = 100; // Default if not provided
+    } else {
+      const parsedTotalPages = Number.parseInt(totalPages, 10);
+
+      if (Number.isNaN(parsedTotalPages) || parsedTotalPages <= 0) {
+        return res.status(400).json({ message: 'totalPages must be a positive integer when provided' });
+      }
+
+      calculatedTotalPages = parsedTotalPages;
+    }
+
+    const safeTotalPages = calculatedTotalPages <= 0 ? 1 : calculatedTotalPages;
+    const boundedCurrentPage = Math.min(parsedCurrentPage, safeTotalPages);
+    const percentageComplete = Math.min(100, Math.max(0, (boundedCurrentPage / safeTotalPages) * 100));
 
     const progress = await prisma.readingProgress.upsert({
       where: {
@@ -33,16 +54,16 @@ router.post('/progress', authenticate, async (req, res, next) => {
         },
       },
       update: {
-        currentPage,
-        totalPages: calculatedTotalPages,
+        currentPage: boundedCurrentPage,
+        totalPages: safeTotalPages,
         percentageComplete,
         lastReadAt: new Date(),
       },
       create: {
         userId: req.user.id,
         bookId,
-        currentPage,
-        totalPages: calculatedTotalPages,
+        currentPage: boundedCurrentPage,
+        totalPages: safeTotalPages,
         percentageComplete,
       },
     });

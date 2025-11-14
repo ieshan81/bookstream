@@ -1,19 +1,18 @@
-// Cloud storage configuration
-// Currently using local storage, but can be extended for S3/Google Cloud
-
 export const storageConfig = {
-  type: process.env.STORAGE_TYPE || 'local', // 'local' | 's3' | 'gcs'
-  localPath: process.env.UPLOAD_DIR || './uploads',
-  maxFileSize: parseInt(process.env.MAX_FILE_SIZE) || 52428800, // 50MB default
+  type: process.env['STORAGE_TYPE'] || 'local',
+  localPath: process.env['UPLOAD_DIR'] || './uploads',
+  maxFileSize: Number.parseInt(process.env['MAX_FILE_SIZE'], 10) || 52428800,
   allowedFormats: ['application/pdf', 'application/epub+zip', 'application/epub'],
+  supabaseUrl: process.env['SUPABASE_URL'],
+  supabaseServiceKey: process.env['SUPABASE_SERVICE_ROLE_KEY'],
+  supabaseBucket: process.env['SUPABASE_BUCKET'] || 'book-files',
+  supabaseFolder: process.env['SUPABASE_FOLDER'] || 'uploads',
 };
 
-// Future: Add S3/GCS configuration here
 export const getFileUrl = (filename) => {
   if (storageConfig.type === 'local') {
     return `/api/files/${filename}`;
   }
-  // Add S3/GCS URL generation here
+
   return filename;
 };
-
