@@ -1,20 +1,13 @@
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs';
-import { promises as fsPromises } from 'fs';
+import fs from 'fs/promises';
 import os from 'os';
 import { storageConfig } from '../config/cloudStorage.js';
 
 const isSupabaseStorage = storageConfig.type === 'supabase';
 
 if (!isSupabaseStorage) {
-  try {
-    fs.mkdirSync(storageConfig.localPath, { recursive: true });
-  } catch (error) {
-    if (error.code !== 'EEXIST') {
-      throw error;
-    }
-  }
+  await fs.mkdir(storageConfig.localPath, { recursive: true }).catch(() => {});
 }
 
 const diskStorage = multer.diskStorage({
@@ -55,13 +48,13 @@ export const upload = multer({
 export const uploadSingle = upload.single('book');
 
 export const createTempFileFromBuffer = async (file) => {
-  const tempDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), 'bookstream-'));
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'bookstream-'));
   const extension = path.extname(file.originalname) || '.tmp';
   const tempPath = path.join(tempDir, `${file.fieldname || 'upload'}${extension}`);
-  await fsPromises.writeFile(tempPath, file.buffer);
+  await fs.writeFile(tempPath, file.buffer);
   const cleanup = async () => {
-    await fsPromises.unlink(tempPath).catch(() => {});
-    await fsPromises.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+    await fs.unlink(tempPath).catch(() => {});
+    await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
   };
 
   return { tempPath, cleanup };
