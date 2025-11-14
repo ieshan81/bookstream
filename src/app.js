@@ -7,7 +7,7 @@ import authRoutes from './routes/auth.js';
 import bookRoutes from './routes/books.js';
 import uploadRoutes from './routes/upload.js';
 import readingRoutes from './routes/reading.js';
-import { storageConfig } from './config/cloudStorage.js';
+import { getStorageConfig } from './config/cloudStorage.js';
 
 const app = express();
 
@@ -18,6 +18,8 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(passport.initialize());
+
+const storageConfig = getStorageConfig();
 
 if (storageConfig.type === 'local') {
   const uploadsDir = path.resolve(storageConfig.localPath ?? './uploads');

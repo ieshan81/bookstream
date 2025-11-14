@@ -1,7 +1,9 @@
 import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
-import { storageConfig, getFileUrl } from '../config/cloudStorage.js';
+import { getStorageConfig, getFileUrl } from '../config/cloudStorage.js';
+
+const readConfig = () => getStorageConfig();
 
 const generateFilename = (originalName) => {
   const ext = path.extname(originalName) || '.bin';
@@ -10,6 +12,8 @@ const generateFilename = (originalName) => {
 };
 
 const buildSupabasePath = (filename) => {
+  const storageConfig = readConfig();
+
   if (!storageConfig.supabaseUrl || !storageConfig.supabaseServiceKey) {
     throw new Error('Supabase storage requires SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
   }
@@ -19,6 +23,8 @@ const buildSupabasePath = (filename) => {
 };
 
 export const saveFile = async (file) => {
+  const storageConfig = readConfig();
+
   if (storageConfig.type === 'supabase') {
     const filename = generateFilename(file.originalname);
     const key = buildSupabasePath(filename);
@@ -62,12 +68,14 @@ export const saveFile = async (file) => {
     path: file.path,
     size: file.size,
     mimetype: file.mimetype,
-    url: getFileUrl(path.basename(file.path)),
+    url: getFileUrl(path.basename(file.path), storageConfig),
   };
 };
 
 export const deleteFile = async (filePath) => {
   try {
+    const storageConfig = readConfig();
+
     if (storageConfig.type === 'supabase') {
       const deleteUrl = `${storageConfig.supabaseUrl}/storage/v1/object/${storageConfig.supabaseBucket}/${filePath}`;
       const response = await fetch(deleteUrl, {

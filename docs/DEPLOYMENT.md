@@ -11,7 +11,7 @@ This guide explains how to host the BookStream API for global access using **Net
 
 1. Create a Supabase project at [supabase.com](https://supabase.com) on the `Pro` or `Free` tier.
 2. In **Project Settings → Database**, copy the `Connection string` (Node.js) and store it as `DATABASE_URL`.
-3. In **Project Settings → API**, copy the `project URL` (e.g. `https://xyz.supabase.co`) and the `service_role` key. The service role key is required for server-side uploads and should never be exposed to the browser.
+3. In **Project Settings → API**, copy the project URL and the service role key. **Do not** commit either value—store them only as environment variables in Netlify or your local `.env` file.
 4. Create a Storage bucket named (for example) `book-files` in **Storage → Buckets**. Enable `Public` access if you want files to be accessible without signed URLs.
 5. (Optional) Create a folder (e.g. `uploads`) inside the bucket to keep uploads organised.
 
@@ -19,13 +19,13 @@ Record the following values for Netlify environment variables:
 
 | Variable | Purpose |
 | --- | --- |
-| `DATABASE_URL` | Prisma connection string pointing to the Supabase Postgres instance. |
-| `SUPABASE_URL` | Supabase project URL. |
-| `SUPABASE_SERVICE_ROLE_KEY` | Service key for storage uploads and Prisma. |
+| `DATABASE_URL` | Prisma connection string pointing to the Supabase Postgres instance (set only in env vars). |
+| `SUPABASE_URL` | Supabase project URL (store privately as an env var). |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service-role key used for uploads—add it only to env vars. |
 | `SUPABASE_BUCKET` | Storage bucket name (default `book-files`). |
 | `SUPABASE_FOLDER` | Optional folder inside the bucket (default `uploads`). |
 | `STORAGE_TYPE` | Set to `supabase` so BookStream uploads use Supabase Storage. |
-| `JWT_SECRET` | Secret for signing API tokens. |
+| `JWT_SECRET` | Secret for signing API tokens (keep in env vars). |
 | `FRONTEND_URL` | The Netlify site URL that will call the API (e.g. `https://your-frontend.netlify.app`). |
 
 ## 2. Prepare the repository
