@@ -3,8 +3,26 @@ import prisma from '../config/database.js';
 /**
  * Search books by title, author, or genre
  */
+const sanitizeNonNegativeInt = (value, fallback) => {
+  if (typeof value === 'number' && Number.isInteger(value) && value >= 0) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number.parseInt(value, 10);
+
+    if (!Number.isNaN(parsed) && parsed >= 0) {
+      return parsed;
+    }
+  }
+
+  return fallback;
+};
+
 export const searchBooks = async (query, filters = {}) => {
   const { genre, limit = 50, offset = 0 } = filters;
+  const sanitizedLimit = sanitizeNonNegativeInt(limit, 50);
+  const sanitizedOffset = sanitizeNonNegativeInt(offset, 0);
   
   const where = {
     AND: [
@@ -21,8 +39,8 @@ export const searchBooks = async (query, filters = {}) => {
   const [books, total] = await Promise.all([
     prisma.book.findMany({
       where,
-      take: limit,
-      skip: offset,
+      take: sanitizedLimit,
+      skip: sanitizedOffset,
       orderBy: { createdAt: 'desc' },
       include: {
         uploader: {
@@ -40,6 +58,7 @@ export const searchBooks = async (query, filters = {}) => {
  * Get books by category
  */
 export const getBooksByCategory = async (category, limit = 20) => {
+  const sanitizedLimit = sanitizeNonNegativeInt(limit, 20);
   let orderBy = {};
   
   switch (category.toLowerCase()) {
@@ -58,7 +77,7 @@ export const getBooksByCategory = async (category, limit = 20) => {
   }
 
   const books = await prisma.book.findMany({
-    take: limit,
+    take: sanitizedLimit,
     orderBy,
     include: {
       uploader: {
@@ -74,6 +93,7 @@ export const getBooksByCategory = async (category, limit = 20) => {
  * Get related books based on genre
  */
 export const getRelatedBooks = async (bookId, limit = 5) => {
+  const sanitizedLimit = sanitizeNonNegativeInt(limit, 5);
   const book = await prisma.book.findUnique({
     where: { id: bookId },
     select: { genre: true },
@@ -88,7 +108,7 @@ export const getRelatedBooks = async (bookId, limit = 5) => {
       genre: book.genre,
       id: { not: bookId },
     },
-    take: limit,
+    take: sanitizedLimit,
     orderBy: { createdAt: 'desc' },
   });
 

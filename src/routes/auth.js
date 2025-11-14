@@ -10,13 +10,13 @@ import { authenticate } from '../middleware/auth.js';
 const router = express.Router();
 
 // Configure Google OAuth
-if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+if (process.env['GOOGLE_CLIENT_ID'] && process.env['GOOGLE_CLIENT_SECRET']) {
   passport.use(
     new GoogleStrategy(
       {
-        clientID: process.env.GOOGLE_CLIENT_ID,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        callbackURL: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:5000/api/auth/callback/google',
+        clientID: process.env['GOOGLE_CLIENT_ID'],
+        clientSecret: process.env['GOOGLE_CLIENT_SECRET'],
+        callbackURL: process.env['GOOGLE_CALLBACK_URL'] || 'http://localhost:5000/api/auth/callback/google',
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
@@ -62,8 +62,8 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 
 // Generate JWT token
 const generateToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+  return jwt.sign({ userId }, process.env['JWT_SECRET'], {
+    expiresIn: process.env['JWT_EXPIRES_IN'] || '7d',
   });
 };
 
@@ -152,7 +152,7 @@ router.get(
   passport.authenticate('google', { session: false }),
   (req, res) => {
     const token = generateToken(req.user.id);
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = process.env['FRONTEND_URL'] || 'http://localhost:5173';
     res.redirect(`${frontendUrl}/auth/callback?token=${token}`);
   }
 );

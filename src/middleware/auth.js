@@ -9,7 +9,7 @@ export const authenticate = async (req, res, next) => {
       return res.status(401).json({ message: 'Authentication required' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env['JWT_SECRET']);
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: { id: true, email: true, name: true, avatar: true },
@@ -36,7 +36,7 @@ export const optionalAuth = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (token) {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, process.env['JWT_SECRET']);
       const user = await prisma.user.findUnique({
         where: { id: decoded.userId },
         select: { id: true, email: true, name: true, avatar: true },
